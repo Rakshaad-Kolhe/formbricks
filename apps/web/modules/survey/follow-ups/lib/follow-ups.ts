@@ -8,6 +8,7 @@ import { TResponse } from "@formbricks/types/responses";
 import { TSurveyFollowUp } from "@formbricks/types/surveys/follow-up";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
+import { IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { getOrganizationByWorkspaceId } from "@/lib/organization/service";
 import { getResponse } from "@/lib/response/service";
 import { getSurvey } from "@/lib/survey/service";
@@ -207,8 +208,8 @@ export const sendFollowUpsForResponse = async (
       });
     }
 
-    // If no follow-ups configured, return empty array
-    if (!survey.followUps?.length) {
+    // If no follow-ups configured or SMTP is not configured, return empty array
+    if (!survey.followUps?.length || !IS_SMTP_CONFIGURED) {
       return {
         ok: true,
         data: [],

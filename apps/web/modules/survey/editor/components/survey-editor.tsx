@@ -83,6 +83,7 @@ interface SurveyEditorProps {
   visibility: TSurveyVisibility;
   surveyAccess: TSurveyAccess | null;
   ownerName: string | null;
+  isSmtpConfigured?: boolean;
 }
 
 export const SurveyEditor = ({
@@ -119,6 +120,7 @@ export const SurveyEditor = ({
   visibility,
   surveyAccess,
   ownerName,
+  isSmtpConfigured = true,
 }: Readonly<SurveyEditorProps>) => {
   const isFollowUpsTabVisible = shouldShowFollowUpsTab({
     followUpCount: survey.followUps.length,
@@ -372,6 +374,7 @@ export const SurveyEditor = ({
               appSetupCompleted={localWorkspace.appSetupCompleted}
               enterpriseLicenseRequestFormUrl={enterpriseLicenseRequestFormUrl}
               hasTriggerError={hasTriggerError}
+              isSmtpConfigured={isSmtpConfigured}
             />
           )}
 

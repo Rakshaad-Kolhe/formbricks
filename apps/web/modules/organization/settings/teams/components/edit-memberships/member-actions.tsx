@@ -25,9 +25,16 @@ interface MemberActionsProps {
   member?: TMember;
   invite?: TInvite;
   showDeleteButton?: boolean;
+  isSmtpConfigured?: boolean;
 }
 
-export const MemberActions = ({ organization, member, invite, showDeleteButton }: MemberActionsProps) => {
+export const MemberActions = ({
+  organization,
+  member,
+  invite,
+  showDeleteButton,
+  isSmtpConfigured = true,
+}: Readonly<MemberActionsProps>) => {
   const router = useRouter();
   const { t } = useTranslation();
   const [isDeleteMemberModalOpen, setDeleteMemberModalOpen] = useState(false);
@@ -67,7 +74,7 @@ export const MemberActions = ({ organization, member, invite, showDeleteButton }
 
       setIsDeleting(false);
       router.refresh();
-    } catch (err) {
+    } catch (_err) {
       setIsDeleting(false);
       toast.error(t("common.something_went_wrong_please_try_again"));
     }
@@ -151,13 +158,17 @@ export const MemberActions = ({ organization, member, invite, showDeleteButton }
       </TooltipRenderer>
 
       <TooltipRenderer
-        tooltipContent={t("workspace.settings.general.resend_invitation_email")}
+        tooltipContent={
+          !isSmtpConfigured
+            ? t("setup.invite.smtp_not_configured")
+            : t("workspace.settings.general.resend_invitation_email")
+        }
         shouldRender={!!invite}>
         <Button
           variant="secondary"
           size="icon"
           id="resendInviteButton"
-          disabled={!invite}
+          disabled={!invite || !isSmtpConfigured}
           onClick={() => {
             handleResendInvite();
           }}>

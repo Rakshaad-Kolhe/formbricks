@@ -17,7 +17,7 @@ import {
   toDateOnlySelection,
 } from "@/modules/survey/scheduling/lib/date-utils";
 import { AdvancedOptionToggle } from "@/modules/ui/components/advanced-option-toggle";
-import { Alert, AlertTitle } from "@/modules/ui/components/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/modules/ui/components/alert";
 import { DatePicker } from "@/modules/ui/components/date-picker";
 import { Input } from "@/modules/ui/components/input";
 import { Label } from "@/modules/ui/components/label";
@@ -30,6 +30,7 @@ interface ResponseOptionsCardProps {
   isSpamProtectionAllowed: boolean;
   surveySchedulingConfig: TSurveySchedulingConfig;
   locale: TUserLocale;
+  isSmtpConfigured?: boolean;
 }
 
 export const ResponseOptionsCard = ({
@@ -39,6 +40,7 @@ export const ResponseOptionsCard = ({
   isSpamProtectionAllowed,
   surveySchedulingConfig,
   locale,
+  isSmtpConfigured = true,
 }: Readonly<ResponseOptionsCardProps>) => {
   const { t } = useTranslation();
   const { toCalendarDate, getMinimumSurveySchedulingCalendarDate } = useMemo(
@@ -123,6 +125,7 @@ export const ResponseOptionsCard = ({
   };
 
   const handleVerifyEmailToogle = () => {
+    if (!isSmtpConfigured) return;
     setVerifyEmailToggle(!verifyEmailToggle);
     setLocalSurvey({ ...localSurvey, isVerifyEmailEnabled: !localSurvey.isVerifyEmailEnabled });
   };
@@ -520,9 +523,20 @@ export const ResponseOptionsCard = ({
                 htmlId="verifyEmailBeforeSubmission"
                 isChecked={verifyEmailToggle}
                 onToggle={handleVerifyEmailToogle}
+                disabled={!isSmtpConfigured}
                 title={t("workspace.surveys.edit.verify_email_before_submission")}
                 description={t("workspace.surveys.edit.verify_email_before_submission_description")}
               />
+              {!isSmtpConfigured && (
+                <div className="px-4 pb-2">
+                  <Alert variant="warning" size="default" className="text-sm" role="status">
+                    <AlertTitle>{t("auth.verification-requested.email_not_configured_title")}</AlertTitle>
+                    <AlertDescription>
+                      {t("auth.verification-requested.email_not_configured_description")}
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
 
               {/* Protect Survey with Pin */}
               <AdvancedOptionToggle

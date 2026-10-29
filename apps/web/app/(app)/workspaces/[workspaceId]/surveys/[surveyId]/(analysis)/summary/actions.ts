@@ -8,6 +8,7 @@ import { generateExampleResponseDataset } from "@/app/(app)/workspaces/[workspac
 import { persistExampleResponseDataset } from "@/app/(app)/workspaces/[workspaceId]/surveys/[surveyId]/(analysis)/summary/lib/example-responses-persistence";
 import { assertOrganizationAIConfigured } from "@/lib/ai/service";
 import { assertCan } from "@/lib/authorization";
+import { IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { capturePostHogEvent } from "@/lib/posthog";
 import { getResponseCountBySurveyId } from "@/lib/response/service";
 import { getSurvey, updateSurvey } from "@/lib/survey/service";
@@ -51,13 +52,23 @@ export const sendEmbedSurveyPreviewEmailAction = authenticatedActionClient
       .replaceAll("?preview=true&;", "?")
       .replaceAll("?preview=true", "");
 
-    return await sendEmbedSurveyPreviewEmail(
+    if (!IS_SMTP_CONFIGURED) {
+      throw new OperationNotAllowedError("Email service is not configured");
+    }
+
+    const isSent = await sendEmbedSurveyPreviewEmail(
       ctx.user.email,
       emailHtml,
       survey.workspaceId,
       ctx.user.locale,
       organizationLogoUrl || ""
     );
+
+    if (!isSent) {
+      throw new OperationNotAllowedError("Failed to send preview email");
+    }
+
+    return true;
   });
 
 const ZResetSurveyAction = z.object({

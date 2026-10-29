@@ -6,6 +6,7 @@ import { getAISmartToolsUnavailableReason, getOrganizationAIConfig } from "@/lib
 import {
   ENTERPRISE_LICENSE_REQUEST_FORM_URL,
   IS_FORMBRICKS_CLOUD,
+  IS_SMTP_CONFIGURED,
   IS_STORAGE_CONFIGURED,
   RESPONSES_PER_PAGE,
 } from "@/lib/constants";
@@ -97,6 +98,7 @@ const Page = async (props: Readonly<{ params: Promise<{ workspaceId: string; sur
             isContactsEnabled={isContactsEnabled}
             isFormbricksCloud={IS_FORMBRICKS_CLOUD}
             isStorageConfigured={IS_STORAGE_CONFIGURED}
+            isSmtpConfigured={IS_SMTP_CONFIGURED}
             enterpriseLicenseRequestFormUrl={ENTERPRISE_LICENSE_REQUEST_FORM_URL}
             aiUnavailableReason={aiUnavailableReason}
           />

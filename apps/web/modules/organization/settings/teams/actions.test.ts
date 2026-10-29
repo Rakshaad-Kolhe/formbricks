@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { InvalidInputError } from "@formbricks/types/errors";
+import { InvalidInputError, OperationNotAllowedError } from "@formbricks/types/errors";
 import { bulkInviteUsersAction, inviteUserAction, resendInviteAction } from "./actions";
 
 const mocks = vi.hoisted(() => ({
@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   resendInvite: vi.fn(),
   sendInviteMemberEmail: vi.fn(),
   settleInviteRateLimit: vi.fn(),
+  isSmtpConfigured: true,
 }));
 
 vi.mock("@formbricks/database", () => ({
@@ -42,6 +43,9 @@ vi.mock("@/lib/authorization", () => ({
 }));
 
 vi.mock("@/lib/constants", () => ({
+  get IS_SMTP_CONFIGURED() {
+    return mocks.isSmtpConfigured;
+  },
   INVITE_DISABLED: false,
   IS_FORMBRICKS_CLOUD: false,
 }));
@@ -144,6 +148,8 @@ describe("invite rate-limit settlement", () => {
     mocks.getInvite.mockResolvedValue({ creator: { name: "Inviter" } });
     mocks.inviteUser.mockResolvedValue("invite-1");
     mocks.reserveInviteRateLimit.mockResolvedValue(reservation);
+    mocks.isSmtpConfigured = true;
+    mocks.sendInviteMemberEmail.mockResolvedValue(true);
     mocks.resendInvite.mockResolvedValue({ email: "invitee@example.com", name: "Invitee" });
   });
 
@@ -259,5 +265,69 @@ describe("invite rate-limit settlement", () => {
     ).rejects.toBe(error);
 
     expect(mocks.settleInviteRateLimit).toHaveBeenCalledWith(reservation, 1);
+  });
+
+  test("rejects resend invite with OperationNotAllowedError when SMTP is not configured", async () => {
+    mocks.isSmtpConfigured = false;
+
+    await expect(
+      resendInviteAction({
+        ctx,
+        parsedInput: { inviteId: "invite-1", organizationId },
+      } as never)
+    ).rejects.toThrow(OperationNotAllowedError);
+
+    expect(mocks.resendInvite).not.toHaveBeenCalled();
+    expect(mocks.sendInviteMemberEmail).not.toHaveBeenCalled();
+  });
+
+  test("rejects resend invite when email delivery returns false", async () => {
+    mocks.sendInviteMemberEmail.mockResolvedValueOnce(false);
+
+    await expect(
+      resendInviteAction({
+        ctx,
+        parsedInput: { inviteId: "invite-1", organizationId },
+      } as never)
+    ).rejects.toThrow(OperationNotAllowedError);
+
+    expect(mocks.resendInvite).toHaveBeenCalledWith("invite-1");
+    expect(mocks.settleInviteRateLimit).toHaveBeenCalledWith(reservation, 1);
+  });
+
+  test("creates single invite without sending email when SMTP is unconfigured", async () => {
+    mocks.isSmtpConfigured = false;
+
+    await expect(
+      inviteUserAction({
+        ctx,
+        parsedInput: {
+          organizationId,
+          email: "invitee@example.com",
+          name: "Invitee",
+          role: "owner",
+          teamIds: [],
+        },
+      } as never)
+    ).resolves.toBe("invite-1");
+
+    expect(mocks.settleInviteRateLimit).toHaveBeenCalledWith(reservation, 1);
+    expect(mocks.sendInviteMemberEmail).not.toHaveBeenCalled();
+  });
+
+  test("creates bulk invites without sending emails when SMTP is unconfigured", async () => {
+    mocks.isSmtpConfigured = false;
+    mocks.inviteUser.mockResolvedValueOnce("invite-1");
+
+    const result = await bulkInviteUsersAction({
+      ctx,
+      parsedInput: {
+        organizationId,
+        invitees: [{ email: "first@example.com", name: "First", role: "member", teamIds: [] }],
+      },
+    } as never);
+
+    expect(result).toEqual([{ email: "first@example.com", success: true }]);
+    expect(mocks.sendInviteMemberEmail).not.toHaveBeenCalled();
   });
 });

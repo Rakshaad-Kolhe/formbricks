@@ -2,8 +2,9 @@
 
 import { z } from "zod";
 import { ZId } from "@formbricks/types/common";
-import { ResourceNotFoundError } from "@formbricks/types/errors";
+import { OperationNotAllowedError, ResourceNotFoundError } from "@formbricks/types/errors";
 import { assertCan } from "@/lib/authorization";
+import { IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { getOrganization } from "@/lib/organization/service";
 import { authenticatedActionClient } from "@/lib/utils/action-client";
 import { applyRateLimit } from "@/modules/core/rate-limit/helpers";
@@ -79,12 +80,20 @@ export const sendTestEmailAction = authenticatedActionClient
 
     await checkWhiteLabelPermission(organization.id);
 
-    await sendEmailCustomizationPreviewEmail(
+    if (!IS_SMTP_CONFIGURED) {
+      throw new OperationNotAllowedError("Email service is not configured");
+    }
+
+    const isSent = await sendEmailCustomizationPreviewEmail(
       ctx.user.email,
       ctx.user.name,
       ctx.user.locale,
       organization?.whitelabel?.logoUrl || ""
     );
+
+    if (!isSent) {
+      throw new OperationNotAllowedError("Failed to send test email");
+    }
 
     return { success: true };
   });

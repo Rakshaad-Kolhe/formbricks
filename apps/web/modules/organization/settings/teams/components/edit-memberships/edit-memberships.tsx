@@ -1,6 +1,6 @@
 import { TOrganizationRole } from "@formbricks/types/memberships";
 import { TOrganization } from "@formbricks/types/organizations";
-import { IS_FORMBRICKS_CLOUD } from "@/lib/constants";
+import { IS_FORMBRICKS_CLOUD, IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { getAccessFlags } from "@/lib/membership/utils";
 import { MembersInfo } from "@/modules/organization/settings/teams/components/edit-memberships/members-info";
 import { getInvitesByOrganizationId } from "@/modules/organization/settings/teams/lib/invite";
@@ -47,6 +47,7 @@ export const EditMemberships = async ({
       isAccessControlAllowed={isAccessControlAllowed}
       isFormbricksCloud={IS_FORMBRICKS_CLOUD}
       isUserManagementDisabledFromUi={isUserManagementDisabledFromUi}
+      isSmtpConfigured={IS_SMTP_CONFIGURED}
     />
   );
 };

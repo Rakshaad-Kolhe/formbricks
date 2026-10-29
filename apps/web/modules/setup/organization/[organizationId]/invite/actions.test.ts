@@ -8,9 +8,13 @@ const mocks = vi.hoisted(() => ({
   reserveInviteRateLimit: vi.fn(),
   sendInviteMemberEmail: vi.fn(),
   settleInviteRateLimit: vi.fn(),
+  isSmtpConfigured: true,
 }));
 
 vi.mock("@/lib/constants", () => ({
+  get IS_SMTP_CONFIGURED() {
+    return mocks.isSmtpConfigured;
+  },
   INVITE_DISABLED: false,
 }));
 
@@ -61,6 +65,7 @@ describe("setup invite rate-limit settlement", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.isSmtpConfigured = true;
     mocks.inviteUser.mockResolvedValue("invite-1");
     mocks.reserveInviteRateLimit.mockResolvedValue(reservation);
   });
@@ -82,5 +87,14 @@ describe("setup invite rate-limit settlement", () => {
     await expect(inviteOrganizationMemberAction({ ctx, parsedInput } as never)).rejects.toBe(error);
 
     expect(mocks.settleInviteRateLimit).toHaveBeenCalledWith(reservation, 1);
+  });
+
+  test("creates invite without attempting email when SMTP is unconfigured", async () => {
+    mocks.isSmtpConfigured = false;
+
+    await expect(inviteOrganizationMemberAction({ ctx, parsedInput } as never)).resolves.toBe("invite-1");
+
+    expect(mocks.settleInviteRateLimit).toHaveBeenCalledWith(reservation, 1);
+    expect(mocks.sendInviteMemberEmail).not.toHaveBeenCalled();
   });
 });

@@ -140,6 +140,7 @@ const getMemberColumns = ({
   doesOrgHaveMoreThanOneOwner,
   lastSignInSort,
   onToggleLastSignInSort,
+  isSmtpConfigured = true,
 }: Readonly<{
   t: TFunction;
   locale: string;
@@ -154,6 +155,7 @@ const getMemberColumns = ({
   doesOrgHaveMoreThanOneOwner: boolean;
   lastSignInSort: TLastSignInSort | null;
   onToggleLastSignInSort: () => void;
+  isSmtpConfigured?: boolean;
 }>): TSettingsTableColumn<TMemberRow>[] => {
   // `ph-no-capture` on the name, email and role cells is PostHog redaction, not styling.
   const columns: TSettingsTableColumn<TMemberRow>[] = [
@@ -235,6 +237,7 @@ const getMemberColumns = ({
           organization={organization}
           member={isInvitee(member) ? undefined : member}
           invite={isInvitee(member) ? member : undefined}
+          isSmtpConfigured={isSmtpConfigured}
           showDeleteButton={showDeleteButton(member, {
             isOwnerOrManager,
             isManager,
@@ -258,6 +261,7 @@ interface MembersInfoProps {
   isAccessControlAllowed: boolean;
   isFormbricksCloud: boolean;
   isUserManagementDisabledFromUi: boolean;
+  isSmtpConfigured?: boolean;
 }
 
 export const MembersInfo = ({
@@ -269,6 +273,7 @@ export const MembersInfo = ({
   isAccessControlAllowed,
   isFormbricksCloud,
   isUserManagementDisabledFromUi,
+  isSmtpConfigured = true,
 }: Readonly<MembersInfoProps>) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage ?? i18n.language ?? "en-US";
@@ -301,6 +306,7 @@ export const MembersInfo = ({
         doesOrgHaveMoreThanOneOwner,
         lastSignInSort,
         onToggleLastSignInSort: toggleLastSignInSort,
+        isSmtpConfigured,
       })}
       rows={allMembers}
       getRowId={(member) => member.email}

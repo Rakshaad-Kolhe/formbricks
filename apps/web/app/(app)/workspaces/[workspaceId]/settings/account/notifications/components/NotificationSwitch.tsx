@@ -15,6 +15,7 @@ interface NotificationSwitchProps {
   notificationType: "alert" | "unsubscribedOrganizationIds";
   autoDisableNotificationType?: string;
   autoDisableNotificationElementId?: string;
+  disabled?: boolean;
 }
 
 export const NotificationSwitch = ({
@@ -23,6 +24,7 @@ export const NotificationSwitch = ({
   notificationType,
   autoDisableNotificationType,
   autoDisableNotificationElementId,
+  disabled,
 }: NotificationSwitchProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
@@ -122,7 +124,7 @@ export const NotificationSwitch = ({
       id="notification-switch"
       aria-label={`toggle notification settings for ${notificationType}`}
       checked={isChecked}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
       onCheckedChange={async () => {
         await handleSwitchChange();
       }}

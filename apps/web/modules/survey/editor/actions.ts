@@ -9,6 +9,7 @@ import { TSurvey, TSurveyVariable, ZSurvey } from "@formbricks/types/surveys/typ
 import { assertCan } from "@/lib/authorization";
 import {
   IS_FORMBRICKS_SURVEYS_CONFIGURED,
+  IS_SMTP_CONFIGURED,
   POSTHOG_KEY,
   UNSPLASH_ACCESS_KEY,
   UNSPLASH_ALLOWED_DOMAINS,
@@ -224,6 +225,12 @@ export const updateSurveyDraftAction = authenticatedActionClient.inputSchema(ZSu
     await checkExternalUrlsPermission(organizationId, survey, oldObject);
     await assertCanWriteCustomHeadScripts({ type: "user", id: ctx.user.id }, workspaceId, survey, oldObject);
 
+    if (survey.isVerifyEmailEnabled && !oldObject?.isVerifyEmailEnabled && !IS_SMTP_CONFIGURED) {
+      throw new OperationNotAllowedError(
+        "Email verification cannot be enabled when email service is not configured"
+      );
+    }
+
     // Use the draft version that skips validation
     const result = await updateSurveyDraft(survey);
 
@@ -278,6 +285,13 @@ export const updateSurveyAction = authenticatedActionClient.inputSchema(ZSurvey)
       parsedInput,
       oldObject
     );
+
+    if (parsedInput.isVerifyEmailEnabled && !oldObject?.isVerifyEmailEnabled && !IS_SMTP_CONFIGURED) {
+      throw new OperationNotAllowedError(
+        "Email verification cannot be enabled when email service is not configured"
+      );
+    }
+
     const result = await updateSurvey(parsedInput);
     ctx.auditLoggingCtx.oldObject = oldObject;
     ctx.auditLoggingCtx.newObject = result;

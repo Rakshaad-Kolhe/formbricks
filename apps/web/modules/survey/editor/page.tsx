@@ -3,6 +3,7 @@ import {
   DEFAULT_LOCALE,
   ENTERPRISE_LICENSE_REQUEST_FORM_URL,
   IS_FORMBRICKS_CLOUD,
+  IS_SMTP_CONFIGURED,
   IS_STORAGE_CONFIGURED,
   MAIL_FROM,
   SURVEY_BG_COLORS,
@@ -181,6 +182,7 @@ export const SurveyEditorPage = async (props: {
       visibility={visibility}
       surveyAccess={surveyAccess}
       ownerName={ownerName}
+      isSmtpConfigured={IS_SMTP_CONFIGURED}
     />
   );
 };
