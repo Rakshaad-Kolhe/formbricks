@@ -10,10 +10,12 @@ import {
   getAccessControlPermission,
   getBiggerUploadFileSizePermission,
   getBulkInvitePermission,
+  getCustomCssPermission,
   getIsAISmartToolsEnabled,
   getIsAuditLogsEnabled,
   getIsContactsEnabled,
   getIsDashboardsEnabled,
+  getIsDataRetentionEnabled,
   getIsFeedbackDirectoriesEnabled,
   getIsMultiOrgEnabled,
   getIsQuotasEnabled,
@@ -67,6 +69,7 @@ const defaultFeatures: TEnterpriseLicenseFeatures = {
   feedbackDirectories: false,
   dashboards: false,
   workflows: false,
+  dataRetention: false,
 };
 
 const defaultLicense = {
@@ -189,6 +192,31 @@ describe("License Utils", () => {
       const result = await getBulkInvitePermission("org_1");
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe("getCustomCssPermission", () => {
+    test("returns true on self-hosted on every plan, without a license or an entitlement check", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = false;
+
+      await expect(getCustomCssPermission("org_1")).resolves.toBe(true);
+      expect(hasOrganizationEntitlementWithLicenseGuard).not.toHaveBeenCalled();
+      expect(getEnterpriseLicense).not.toHaveBeenCalled();
+    });
+
+    test("uses the cloud custom-css entitlement", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = true;
+      vi.mocked(hasOrganizationEntitlementWithLicenseGuard).mockResolvedValueOnce(true);
+
+      await expect(getCustomCssPermission("org_1")).resolves.toBe(true);
+      expect(hasOrganizationEntitlementWithLicenseGuard).toHaveBeenCalledWith("org_1", "custom-css");
+    });
+
+    test("returns false on cloud without the custom-css entitlement", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = true;
+      vi.mocked(hasOrganizationEntitlementWithLicenseGuard).mockResolvedValueOnce(false);
+
+      await expect(getCustomCssPermission("org_1")).resolves.toBe(false);
     });
   });
 
@@ -357,6 +385,52 @@ describe("License Utils", () => {
       expect(dashboards).toBe(false);
       expect(workflows).toBe(false);
       expect(hasOrganizationEntitlementWithLicenseGuard).not.toHaveBeenCalled();
+    });
+
+    test("uses the cloud data retention entitlement", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = true;
+      vi.mocked(hasOrganizationEntitlementWithLicenseGuard).mockResolvedValueOnce(true);
+
+      const result = await getIsDataRetentionEnabled("org_1");
+
+      expect(result).toBe(true);
+      expect(hasOrganizationEntitlementWithLicenseGuard).toHaveBeenCalledWith(
+        "org_1",
+        CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.DATA_RETENTION
+      );
+      expect(getEnterpriseLicense).not.toHaveBeenCalled();
+    });
+
+    test("returns self-hosted data retention from the license", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = false;
+      vi.mocked(getEnterpriseLicense).mockResolvedValue({
+        ...defaultLicense,
+        features: { ...defaultFeatures, dataRetention: true },
+      });
+
+      expect(await getIsDataRetentionEnabled("org_1")).toBe(true);
+      expect(hasOrganizationEntitlementWithLicenseGuard).not.toHaveBeenCalled();
+    });
+
+    test("returns false for self-hosted data retention when the license doesn't grant it", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = false;
+      vi.mocked(getEnterpriseLicense).mockResolvedValue({
+        ...defaultLicense,
+        features: defaultFeatures,
+      });
+
+      expect(await getIsDataRetentionEnabled("org_1")).toBe(false);
+    });
+
+    test("returns false for self-hosted data retention when the license is inactive", async () => {
+      vi.mocked(constants).IS_FORMBRICKS_CLOUD = false;
+      vi.mocked(getEnterpriseLicense).mockResolvedValue({
+        ...defaultLicense,
+        active: false,
+        features: { ...defaultFeatures, dataRetention: true },
+      });
+
+      expect(await getIsDataRetentionEnabled("org_1")).toBe(false);
     });
   });
 

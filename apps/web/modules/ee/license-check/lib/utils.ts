@@ -43,6 +43,7 @@ const getCustomPlanFeaturePermission = async (
     | "feedbackDirectories"
     | "dashboards"
     | "workflows"
+    | "dataRetention"
   >
 ): Promise<boolean> => {
   if (IS_FORMBRICKS_CLOUD) {
@@ -54,6 +55,7 @@ const getCustomPlanFeaturePermission = async (
       feedbackDirectories: CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.FEEDBACK_DIRECTORIES,
       dashboards: CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.DASHBOARDS,
       workflows: CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.WORKFLOWS,
+      dataRetention: CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.DATA_RETENTION,
     };
     const lookupKey = featureLookupKeyMap[featureKey];
     if (lookupKey) {
@@ -180,6 +182,10 @@ export const getIsWorkflowsEnabled = async (organizationId: string): Promise<boo
   return getCustomPlanFeaturePermission(organizationId, "workflows");
 };
 
+export const getIsDataRetentionEnabled = async (organizationId: string): Promise<boolean> => {
+  return getCustomPlanFeaturePermission(organizationId, "dataRetention");
+};
+
 export const getBulkInvitePermission = async (organizationId: string): Promise<boolean> => {
   // Bulk invite is gated only on Formbricks Cloud (anti-spam, multi-tenant concern). Self-hosted
   // keeps the original unrestricted behavior for every tier, including community.
@@ -190,6 +196,22 @@ export const getBulkInvitePermission = async (organizationId: string): Promise<b
   return hasOrganizationEntitlementWithLicenseGuard(
     organizationId,
     CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.BULK_INVITE
+  );
+};
+
+/**
+ * Custom CSS additions and edits (ENG-2949, D15). Scale-only on Formbricks Cloud; every self-hosted plan,
+ * Community Edition included, may write it without a license. Only the plan half of the rule — the role
+ * and processing checks live in `modules/custom-css/lib`, and removal never needs this.
+ */
+export const getCustomCssPermission = async (organizationId: string): Promise<boolean> => {
+  if (!IS_FORMBRICKS_CLOUD) {
+    return true;
+  }
+
+  return hasOrganizationEntitlementWithLicenseGuard(
+    organizationId,
+    CLOUD_STRIPE_FEATURE_LOOKUP_KEYS.CUSTOM_CSS
   );
 };
 

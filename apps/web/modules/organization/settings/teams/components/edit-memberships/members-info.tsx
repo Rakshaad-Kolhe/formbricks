@@ -1,5 +1,6 @@
 "use client";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
 import { useState } from "react";
@@ -20,6 +21,7 @@ import { TInvite } from "@/modules/organization/settings/teams/types/invites";
 import { Badge } from "@/modules/ui/components/badge";
 import { SettingsTable, type TSettingsTableColumn } from "@/modules/ui/components/settings-table";
 import { TooltipRenderer } from "@/modules/ui/components/tooltip";
+import { ReactivateMemberButton } from "./reactivate-member-button";
 
 /** The two row shapes this table mixes: accepted memberships and pending invites. */
 type TMemberRow = TMember | TInvite;
@@ -138,6 +140,7 @@ const getMemberColumns = ({
   isOwnerOrManager,
   isManager,
   doesOrgHaveMoreThanOneOwner,
+  canReactivate,
   lastSignInSort,
   onToggleLastSignInSort,
   isSmtpConfigured = true,
@@ -153,6 +156,11 @@ const getMemberColumns = ({
   isOwnerOrManager: boolean;
   isManager: boolean;
   doesOrgHaveMoreThanOneOwner: boolean;
+  /**
+   * Owners and managers (`organization.manage_access`), licensed or not: Reactivate is user management,
+   * so a member deactivated while the organisation held data retention can come back after it lapses.
+   */
+  canReactivate: boolean;
   lastSignInSort: TLastSignInSort | null;
   onToggleLastSignInSort: () => void;
   isSmtpConfigured?: boolean;
@@ -170,7 +178,9 @@ const getMemberColumns = ({
       id: "email",
       header: t("common.email"),
       headerClassName: "w-[22%]",
-      cellClassName: "ph-no-capture",
+      // A long address wraps rather than widening the table: an inactive member's Reactivate button
+      // already takes the actions column's room.
+      cellClassName: "ph-no-capture break-all",
       cell: (member) => member.email,
     },
   ];
@@ -245,6 +255,31 @@ const getMemberColumns = ({
             doesOrgHaveMoreThanOneOwner,
           })}
         />
+        <div className="flex items-center justify-end gap-2">
+          {canReactivate &&
+          !isInvitee(member) &&
+          !member.isActive &&
+          // Managers don't act on owners, as with Delete; the API refuses it too.
+          !(isManager && member.role === "owner") ? (
+            <ReactivateMemberButton
+              organizationId={organization.id}
+              userId={member.userId}
+              name={member.name || member.email}
+            />
+          ) : null}
+          <MemberActions
+            organization={organization}
+            member={isInvitee(member) ? undefined : member}
+            invite={isInvitee(member) ? member : undefined}
+            showDeleteButton={showDeleteButton(member, {
+              isOwnerOrManager,
+              isManager,
+              currentUserId,
+              doesOrgHaveMoreThanOneOwner,
+            })}
+          />
+        </div>
+
       ),
     });
   }
@@ -289,6 +324,9 @@ export const MembersInfo = ({
   const isOwnerOrManager = isOwner || isManager;
 
   const doesOrgHaveMoreThanOneOwner = hasMoreThanOneActiveOwner(members);
+
+  // One client for the list's mutations (Reactivate), not one per row.
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { mutations: { retry: false } } }));
 
   return (
     <SettingsTable

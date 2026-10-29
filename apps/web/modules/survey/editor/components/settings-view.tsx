@@ -6,6 +6,8 @@ import { TSegment } from "@formbricks/types/segment";
 import { TSurvey } from "@formbricks/types/surveys/types";
 import { TUserLocale } from "@formbricks/types/user";
 import { TargetingCard } from "@/modules/ee/contacts/segments/components/targeting-card";
+import { SurveyRetentionCard } from "@/modules/ee/data-retention/components/survey/survey-retention-card";
+import type { TSurveyDataRetentionContext } from "@/modules/ee/data-retention/types";
 import { QuotasCard } from "@/modules/ee/quotas/components/quotas-card";
 import { TTeamPermission } from "@/modules/ee/teams/workspace-teams/types/team";
 import { HowToSendCard } from "@/modules/survey/editor/components/how-to-send-card";
@@ -61,6 +63,7 @@ export const SettingsView = ({
   enterpriseLicenseRequestFormUrl,
   hasTriggerError = false,
   isSmtpConfigured = true,
+
 }: Readonly<SettingsViewProps>) => {
   const isAppSurvey = localSurvey.type === "app";
 
@@ -125,6 +128,14 @@ export const SettingsView = ({
       />
 
       <RecontactOptionsCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} />
+
+      {dataRetention ? (
+        <SurveyRetentionCard
+          surveyId={localSurvey.id}
+          surveyName={localSurvey.name}
+          context={dataRetention}
+        />
+      ) : null}
 
       {isAppSurvey && <SurveyPlacementCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} />}
     </div>

@@ -39,10 +39,7 @@ const setCompleteNotificationSettings = (
 
 const getMemberships = async (userId: string): Promise<Membership[]> => {
   // ENG-3282: alerts are only offered for surveys whose responses this user may read.
-  const visibleSurveyWhere = buildVisibleSurveyWhereAcrossOrganizations(
-    await isSurveyVisibilityReady(),
-    userId
-  );
+  const visibleSurveyWhere = buildVisibleSurveyWhereAcrossOrganizations(true, userId);
   const memberships = await prisma.membership.findMany({
     where: {
       userId,
