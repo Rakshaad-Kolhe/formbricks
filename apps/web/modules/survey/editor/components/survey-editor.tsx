@@ -100,9 +100,7 @@ interface SurveyEditorProps {
   visibility: TSurveyVisibility;
   surveyAccess: TSurveyAccess | null;
   ownerName: string | null;
-  customCssEditor: TSurveyCustomCssEditorConfig;
-  /** Null when the organisation isn't entitled to data retention. */
-  dataRetention: TSurveyDataRetentionContext;
+  isSmtpConfigured?: boolean;
 }
 
 export const SurveyEditor = ({
@@ -139,8 +137,7 @@ export const SurveyEditor = ({
   visibility,
   surveyAccess,
   ownerName,
-  customCssEditor,
-  dataRetention,
+  isSmtpConfigured = true,
 }: Readonly<SurveyEditorProps>) => {
   const isFollowUpsTabVisible = shouldShowFollowUpsTab({
     followUpCount: survey.followUps.length,
@@ -442,6 +439,7 @@ export const SurveyEditor = ({
               appSetupCompleted={localWorkspace.appSetupCompleted}
               enterpriseLicenseRequestFormUrl={enterpriseLicenseRequestFormUrl}
               hasTriggerError={hasTriggerError}
+              isSmtpConfigured={isSmtpConfigured}
             />
           )}
 

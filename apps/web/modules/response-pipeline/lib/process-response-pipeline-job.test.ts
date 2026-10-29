@@ -35,11 +35,13 @@ const {
   mockSendFollowUpsForResponse,
   mockSendResponseFinishedEmail,
   mockSendTelemetryEvents,
+  mockIsSmtpConfigured,
 } = vi.hoisted(() => {
   process.env.HUB_API_URL ??= "https://hub.test";
 
   return {
-    mockFilterAuthorizedUserIds: vi.fn(),
+    mockIsSmtpConfigured: vi.fn(() => true),
+    mockCan: vi.fn(),
     mockIsSurveyVisibilityReady: vi.fn(),
     mockCaptureSurveyResponsePostHogEvent: vi.fn(),
     mockEnqueueResponseCompletedWorkflowRuns: vi.fn(),
@@ -96,6 +98,9 @@ vi.mock(import("@/lib/constants"), async (importOriginal) => {
 
   return {
     ...actual,
+    get IS_SMTP_CONFIGURED() {
+      return mockIsSmtpConfigured();
+    },
     POSTHOG_KEY: undefined,
   };
 });
@@ -233,8 +238,7 @@ const expectedWebhookMessageId = (jobId: string, webhookId: string, event: strin
 describe("processResponsePipelineJob", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    online.enabled = true;
-    mockFilterAuthorizedUserIds.mockImplementation(async (ids: string[]) => new Set(ids));
+    mockIsSmtpConfigured.mockReturnValue(true);
     mockPrismaOrganizationFindFirst.mockResolvedValue(organization);
     mockPrismaSurveyFindUnique.mockResolvedValue(survey);
     mockGetIntegrations.mockResolvedValue([]);
@@ -1151,5 +1155,21 @@ describe("processResponsePipelineJob", () => {
       }),
       "Response pipeline job failed"
     );
+  });
+
+  test("skips notification recipient lookup, email sending, and follow-ups when SMTP is unconfigured", async () => {
+    mockIsSmtpConfigured.mockReturnValue(false);
+    mockPrismaSurveyFindUnique.mockResolvedValue({
+      ...survey,
+      followUps: [{ id: "fu_1", trigger: { properties: null }, action: { properties: {} } }],
+    });
+
+    await expect(
+      processResponsePipelineJob({ ...baseData, event: "responseFinished" }, baseContext)
+    ).resolves.toBeUndefined();
+
+    expect(mockPrismaUserFindMany).not.toHaveBeenCalled();
+    expect(mockSendResponseFinishedEmail).not.toHaveBeenCalled();
+    expect(mockSendFollowUpsForResponse).not.toHaveBeenCalled();
   });
 });

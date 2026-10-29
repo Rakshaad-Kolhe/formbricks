@@ -3,7 +3,8 @@
 import { z } from "zod";
 import { resolveSurveyLanguage } from "@formbricks/i18n-utils/survey-language-match";
 import { ZLinkSurveyEmailData } from "@formbricks/types/email";
-import { InvalidInputError, ResourceNotFoundError } from "@formbricks/types/errors";
+import { InvalidInputError, OperationNotAllowedError, ResourceNotFoundError } from "@formbricks/types/errors";
+import { IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { actionClient } from "@/lib/utils/action-client";
 import { getOrganizationIdFromSurveyId } from "@/lib/utils/helper";
 import { applyIPRateLimit } from "@/modules/core/rate-limit/helpers";
@@ -39,11 +40,20 @@ export const sendLinkSurveyEmailAction = actionClient
         unmatchedExplicitLanguage: "fallback",
       }) ?? "default";
 
-    await sendLinkSurveyToVerifiedEmail({
+    if (!IS_SMTP_CONFIGURED) {
+      throw new OperationNotAllowedError("Email service is not configured");
+    }
+
+    const isSent = await sendLinkSurveyToVerifiedEmail({
       ...parsedInput,
       surveyLanguageCode,
       logoUrl: organizationLogoUrl || "",
     });
+
+    if (!isSent) {
+      throw new OperationNotAllowedError("Failed to send link survey email");
+    }
+
     return { success: true };
   });
 

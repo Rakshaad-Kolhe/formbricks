@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { TUser, TUserNotificationSettings } from "@formbricks/types/user";
 import { organizationSettingsPath } from "@/modules/settings/lib/routes";
+import { Alert, AlertDescription, AlertTitle } from "@/modules/ui/components/alert";
 import { EmptyState } from "@/modules/ui/components/empty-state";
 import { SettingsTable, type TSettingsTableColumn } from "@/modules/ui/components/settings-table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/modules/ui/components/tooltip";
@@ -18,6 +19,7 @@ interface EditAlertsProps {
   user: TUser;
   autoDisableNotificationType: string;
   autoDisableNotificationElementId: string;
+  isSmtpConfigured?: boolean;
 }
 
 /**
@@ -29,11 +31,13 @@ const getAlertColumns = ({
   notificationSettings,
   autoDisableNotificationType,
   autoDisableNotificationElementId,
+  isSmtpConfigured = true,
 }: Readonly<{
   t: TFunction;
   notificationSettings: TUserNotificationSettings;
   autoDisableNotificationType: string;
   autoDisableNotificationElementId: string;
+  isSmtpConfigured?: boolean;
 }>): TSettingsTableColumn<TAlertRow>[] => [
   {
     id: "survey",
@@ -80,6 +84,7 @@ const getAlertColumns = ({
           notificationType={"alert"}
           autoDisableNotificationType={autoDisableNotificationType}
           autoDisableNotificationElementId={autoDisableNotificationElementId}
+          disabled={!isSmtpConfigured}
         />
       </div>
     ),
@@ -91,6 +96,7 @@ export const EditAlerts = ({
   user,
   autoDisableNotificationType,
   autoDisableNotificationElementId,
+  isSmtpConfigured = true,
 }: Readonly<EditAlertsProps>) => {
   const { t } = useTranslation();
 
@@ -103,10 +109,17 @@ export const EditAlerts = ({
     notificationSettings: user.notificationSettings!,
     autoDisableNotificationType,
     autoDisableNotificationElementId,
+    isSmtpConfigured,
   });
 
   return (
     <>
+      {!isSmtpConfigured && (
+        <Alert variant="warning" role="status" className="mb-4">
+          <AlertTitle>{t("setup.invite.smtp_not_configured")}</AlertTitle>
+          <AlertDescription>{t("setup.invite.smtp_not_configured_description")}</AlertDescription>
+        </Alert>
+      )}
       {memberships.map((membership) => {
         // One row list per organization: the surveys are nested one level deeper, under workspaces, and
         // each row names the workspace it came from.

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ZId } from "@formbricks/types/common";
 import { AuthenticationError } from "@formbricks/types/errors";
 import { ZUserEmail, ZUserName } from "@formbricks/types/user";
-import { INVITE_DISABLED } from "@/lib/constants";
+import { INVITE_DISABLED, IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { authenticatedActionClient } from "@/lib/utils/action-client";
 import { withAuditLogging } from "@/modules/ee/audit-logs/lib/handler";
 import { sendInviteMemberEmail } from "@/modules/email";
@@ -54,7 +54,9 @@ export const inviteOrganizationMemberAction = authenticatedActionClient
       }
       await settleInviteRateLimit(rateLimitReservation, 1);
 
-      await sendInviteMemberEmail(invitedUserId, parsedInput.email, ctx.user.name, "");
+      if (IS_SMTP_CONFIGURED) {
+        await sendInviteMemberEmail(invitedUserId, parsedInput.email, ctx.user.name, "");
+      }
 
       ctx.auditLoggingCtx.inviteId = invitedUserId;
       ctx.auditLoggingCtx.newObject = {

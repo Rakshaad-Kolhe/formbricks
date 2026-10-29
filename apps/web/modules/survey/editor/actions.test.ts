@@ -26,8 +26,13 @@ vi.mock("@/lib/authorization", () => ({
   can: vi.fn(),
 }));
 
+let mockIsSmtpConfigured = true;
+
 vi.mock("@/lib/constants", () => ({
   IS_FORMBRICKS_SURVEYS_CONFIGURED: false,
+  get IS_SMTP_CONFIGURED() {
+    return mockIsSmtpConfigured;
+  },
   POSTHOG_KEY: undefined,
   UNSPLASH_ACCESS_KEY: undefined,
   UNSPLASH_ALLOWED_DOMAINS: [],
@@ -164,5 +169,47 @@ describe.each([
     expect(write).toHaveBeenCalledWith(expect.objectContaining({ id: "survey_1" }), {
       customCssPrincipal: "user_1",
     });
+  });
+});
+
+describe.each([
+  ["updateSurveyAction", updateSurveyAction, updateSurvey],
+  ["updateSurveyDraftAction", updateSurveyDraftAction, updateSurveyDraft],
+] as const)("%s email verification SMTP guard", (_name, action, write) => {
+  beforeEach(() => {
+    mockIsSmtpConfigured = true;
+    vi.mocked(can).mockResolvedValue(true);
+    vi.mocked(write).mockReset();
+    vi.mocked(getOrganizationIdFromSurveyId).mockResolvedValue("org_1");
+    vi.mocked(getWorkspaceIdFromSurveyId).mockResolvedValue("ws_1");
+    vi.mocked(getSurvey).mockResolvedValue({ ...storedSurvey, isVerifyEmailEnabled: false } as TSurvey);
+    vi.mocked(write).mockImplementation(async (survey) => survey);
+  });
+
+  test("rejects enabling email verification when SMTP is unconfigured", async () => {
+    mockIsSmtpConfigured = false;
+
+    await expect(run(action, { ...storedSurvey, isVerifyEmailEnabled: true })).rejects.toThrow(
+      OperationNotAllowedError
+    );
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  test("preserves existing saved setting and allows survey updates when email verification was already enabled", async () => {
+    mockIsSmtpConfigured = false;
+    const surveyWithVerification = { ...storedSurvey, isVerifyEmailEnabled: true };
+    vi.mocked(getSurvey).mockResolvedValue(surveyWithVerification as TSurvey);
+
+    await run(action, { ...surveyWithVerification, name: "Renamed Survey" } as TSurvey);
+
+    expect(write).toHaveBeenCalled();
+  });
+
+  test("allows enabling email verification when SMTP is configured", async () => {
+    mockIsSmtpConfigured = true;
+
+    await run(action, { ...storedSurvey, isVerifyEmailEnabled: true });
+
+    expect(write).toHaveBeenCalledWith(expect.objectContaining({ isVerifyEmailEnabled: true }));
   });
 });

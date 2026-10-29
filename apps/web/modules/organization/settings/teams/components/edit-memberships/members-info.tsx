@@ -143,6 +143,7 @@ const getMemberColumns = ({
   canReactivate,
   lastSignInSort,
   onToggleLastSignInSort,
+  isSmtpConfigured = true,
 }: Readonly<{
   t: TFunction;
   locale: string;
@@ -162,6 +163,7 @@ const getMemberColumns = ({
   canReactivate: boolean;
   lastSignInSort: TLastSignInSort | null;
   onToggleLastSignInSort: () => void;
+  isSmtpConfigured?: boolean;
 }>): TSettingsTableColumn<TMemberRow>[] => {
   // `ph-no-capture` on the name, email and role cells is PostHog redaction, not styling.
   const columns: TSettingsTableColumn<TMemberRow>[] = [
@@ -241,6 +243,18 @@ const getMemberColumns = ({
       // `align-middle` and leaving the buttons baseline-aligned rather than centred.
       align: "right",
       cell: (member) => (
+        <MemberActions
+          organization={organization}
+          member={isInvitee(member) ? undefined : member}
+          invite={isInvitee(member) ? member : undefined}
+          isSmtpConfigured={isSmtpConfigured}
+          showDeleteButton={showDeleteButton(member, {
+            isOwnerOrManager,
+            isManager,
+            currentUserId,
+            doesOrgHaveMoreThanOneOwner,
+          })}
+        />
         <div className="flex items-center justify-end gap-2">
           {canReactivate &&
           !isInvitee(member) &&
@@ -265,6 +279,7 @@ const getMemberColumns = ({
             })}
           />
         </div>
+
       ),
     });
   }
@@ -281,6 +296,7 @@ interface MembersInfoProps {
   isAccessControlAllowed: boolean;
   isFormbricksCloud: boolean;
   isUserManagementDisabledFromUi: boolean;
+  isSmtpConfigured?: boolean;
 }
 
 export const MembersInfo = ({
@@ -292,6 +308,7 @@ export const MembersInfo = ({
   isAccessControlAllowed,
   isFormbricksCloud,
   isUserManagementDisabledFromUi,
+  isSmtpConfigured = true,
 }: Readonly<MembersInfoProps>) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.resolvedLanguage ?? i18n.language ?? "en-US";
@@ -312,37 +329,34 @@ export const MembersInfo = ({
   const [queryClient] = useState(() => new QueryClient({ defaultOptions: { mutations: { retry: false } } }));
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SettingsTable
-        columns={getMemberColumns({
-          t,
-          locale,
-          organization,
-          currentUserRole,
-          currentUserId,
-          isAccessControlAllowed,
-          isFormbricksCloud,
-          isUserManagementDisabledFromUi,
-          isOwnerOrManager,
-          isManager,
-          doesOrgHaveMoreThanOneOwner,
-          // "Reactivate" on inactive members (ENG-3610).
-          canReactivate: isOwnerOrManager,
-          lastSignInSort,
-          onToggleLastSignInSort: toggleLastSignInSort,
-        })}
-        rows={allMembers}
-        getRowId={(member) => member.email}
-        // Effectively unreachable: whoever is looking at this page is themselves a member.
-        emptyMessage={t("common.no_results")}
-        // These two ids are what `organization.spec.ts` and `invite-existing-account.spec.ts` locate. Kept
-        // exactly where they were — on the row container and on each row — so this conversion needs no
-        // spec changes. `#singleMemberInfo` repeating per row is invalid HTML and worth retiring, but that
-        // is a spec change, so it stays a follow-up.
-        bodyProps={{ id: "membersInfoWrapper" }}
-        getRowProps={() => ({ id: "singleMemberInfo" })}
-        aria-label={t("workspace.settings.general.manage_members")}
-      />
-    </QueryClientProvider>
+    <SettingsTable
+      columns={getMemberColumns({
+        t,
+        locale,
+        organization,
+        currentUserRole,
+        currentUserId,
+        isAccessControlAllowed,
+        isFormbricksCloud,
+        isUserManagementDisabledFromUi,
+        isOwnerOrManager,
+        isManager,
+        doesOrgHaveMoreThanOneOwner,
+        lastSignInSort,
+        onToggleLastSignInSort: toggleLastSignInSort,
+        isSmtpConfigured,
+      })}
+      rows={allMembers}
+      getRowId={(member) => member.email}
+      // Effectively unreachable: whoever is looking at this page is themselves a member.
+      emptyMessage={t("common.no_results")}
+      // These two ids are what `organization.spec.ts` and `invite-existing-account.spec.ts` locate. Kept
+      // exactly where they were — on the row container and on each row — so this conversion needs no
+      // spec changes. `#singleMemberInfo` repeating per row is invalid HTML and worth retiring, but that
+      // is a spec change, so it stays a follow-up.
+      bodyProps={{ id: "membersInfoWrapper" }}
+      getRowProps={() => ({ id: "singleMemberInfo" })}
+      aria-label={t("workspace.settings.general.manage_members")}
+    />
   );
 };

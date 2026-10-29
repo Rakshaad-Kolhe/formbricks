@@ -12,14 +12,16 @@ import { Button } from "@/modules/ui/components/button";
 import { CodeBlock } from "@/modules/ui/components/code-block";
 import { LoadingSpinner } from "@/modules/ui/components/loading-spinner";
 import { TabBar } from "@/modules/ui/components/tab-bar";
+import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import { getEmailHtmlAction, sendEmbedSurveyPreviewEmailAction } from "../../actions";
 
 interface EmailTabProps {
   surveyId: string;
   email: string;
+  isSmtpConfigured?: boolean;
 }
 
-export const EmailTab = ({ surveyId, email }: EmailTabProps) => {
+export const EmailTab = ({ surveyId, email, isSmtpConfigured = true }: Readonly<EmailTabProps>) => {
   const [activeTab, setActiveTab] = useState("preview");
   const [emailHtmlPreview, setEmailHtmlPreview] = useState<string>("");
   const [previewFrameHeight, setPreviewFrameHeight] = useState(560);
@@ -161,14 +163,23 @@ export const EmailTab = ({ surveyId, email }: EmailTabProps) => {
               </div>
             </div>
           </div>
-          <Button
-            title={t("workspace.surveys.share.send_email.send_preview_email")}
-            aria-label={t("workspace.surveys.share.send_email.send_preview_email")}
-            onClick={() => sendPreviewEmail()}
-            className="shrink-0">
-            {t("workspace.surveys.share.send_email.send_preview")}
-            <SendIcon />
-          </Button>
+          <TooltipRenderer
+            tooltipContent={t("setup.invite.smtp_not_configured")}
+            shouldRender={!isSmtpConfigured}>
+            <Button
+              title={
+                !isSmtpConfigured
+                  ? t("setup.invite.smtp_not_configured")
+                  : t("workspace.surveys.share.send_email.send_preview_email")
+              }
+              aria-label={t("workspace.surveys.share.send_email.send_preview_email")}
+              onClick={() => sendPreviewEmail()}
+              disabled={!isSmtpConfigured}
+              className="shrink-0">
+              {t("workspace.surveys.share.send_email.send_preview")}
+              <SendIcon />
+            </Button>
+          </TooltipRenderer>
         </div>
       );
     }

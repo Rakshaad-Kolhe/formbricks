@@ -10,8 +10,9 @@ import {
 } from "@formbricks/jobs";
 import { logger } from "@formbricks/logger";
 import { type TUserLocale, ZUserLocale } from "@formbricks/types/user";
-import { filterAuthorizedUserIds } from "@/lib/authorization/user-list";
-import { POSTHOG_KEY } from "@/lib/constants";
+import { can } from "@/lib/authorization";
+import { isSurveyVisibilityReady } from "@/lib/authzed/scope-readiness";
+import { IS_SMTP_CONFIGURED, POSTHOG_KEY } from "@/lib/constants";
 import { selectSurveyEmbeddedDataLinks, withInlinedEmbeddedFields } from "@/lib/embedded-data/survey-fields";
 import { handleFeedbackSourcePipeline } from "@/lib/feedback-source/pipeline-handler";
 import { getIntegrations } from "@/lib/integration/service";
@@ -444,7 +445,7 @@ const handleFollowUpsSafely = async ({
   logContext: ReturnType<typeof getPipelineLogContext>;
   survey: TPipelineSurvey;
 }): Promise<void> => {
-  if (!survey.followUps?.length) {
+  if (!survey.followUps?.length || !IS_SMTP_CONFIGURED) {
     return;
   }
 
@@ -485,6 +486,10 @@ const sendNotificationEmailsSafely = async ({
   usersWithNotifications: Array<{ email: string; locale: TUserLocale }>;
   workspaceId: string;
 }): Promise<void> => {
+  if (!IS_SMTP_CONFIGURED || usersWithNotifications.length === 0) {
+    return;
+  }
+
   if (responseCount === null) {
     if (usersWithNotifications.length > 0) {
       logger.error(
@@ -692,12 +697,13 @@ const runResponseFinishedSideEffects = async ({
 }) => {
   const [integrations, usersWithNotifications] = await Promise.all([
     outboundAllowed ? loadIntegrationsSafely({ logContext, workspaceId }) : Promise.resolve([]),
-    getUsersWithNotifications({
-      survey,
-      data,
-      logContext,
-      workspaceId,
-    }),
+    IS_SMTP_CONFIGURED
+      ? getUsersWithNotifications({
+          data,
+          logContext,
+          workspaceId,
+        })
+      : Promise.resolve([]),
   ]);
 
   // Neither count is consumed until the notification/auto-complete steps at the end, so start

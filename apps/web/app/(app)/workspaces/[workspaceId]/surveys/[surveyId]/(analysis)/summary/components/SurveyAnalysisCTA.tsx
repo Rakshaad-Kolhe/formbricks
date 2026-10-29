@@ -37,6 +37,7 @@ interface SurveyAnalysisCTAProps {
   isContactsEnabled: boolean;
   isFormbricksCloud: boolean;
   isStorageConfigured: boolean;
+  isSmtpConfigured?: boolean;
   enterpriseLicenseRequestFormUrl: string;
   aiUnavailableReason: TAIUnavailableReason | null;
 }
@@ -56,6 +57,7 @@ export const SurveyAnalysisCTA = ({
   isContactsEnabled,
   isFormbricksCloud,
   isStorageConfigured,
+  isSmtpConfigured = true,
   enterpriseLicenseRequestFormUrl,
   aiUnavailableReason,
 }: Readonly<SurveyAnalysisCTAProps>) => {
@@ -323,6 +325,7 @@ export const SurveyAnalysisCTA = ({
           isReadOnly={isReadOnly}
           canManage={canManage}
           isStorageConfigured={isStorageConfigured}
+          isSmtpConfigured={isSmtpConfigured}
           workspaceCustomScripts={workspace.customHeadScripts}
           enterpriseLicenseRequestFormUrl={enterpriseLicenseRequestFormUrl}
         />

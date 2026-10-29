@@ -54,6 +54,7 @@ interface ShareSurveyModalProps {
   isReadOnly: boolean;
   canManage: boolean;
   isStorageConfigured: boolean;
+  isSmtpConfigured?: boolean;
   workspaceCustomScripts?: string | null;
   enterpriseLicenseRequestFormUrl: string;
 }
@@ -71,6 +72,7 @@ export const ShareSurveyModal = ({
   isReadOnly,
   canManage,
   isStorageConfigured,
+  isSmtpConfigured = true,
   workspaceCustomScripts,
   enterpriseLicenseRequestFormUrl,
 }: Readonly<ShareSurveyModalProps>) => {
@@ -133,7 +135,7 @@ export const ShareSurveyModal = ({
         title: t("workspace.surveys.share.send_email.nav_title"),
         description: t("workspace.surveys.share.send_email.description"),
         componentType: EmailTab,
-        componentProps: { surveyId: survey.id, email },
+        componentProps: { surveyId: survey.id, email, isSmtpConfigured },
         disabled: survey.singleUse?.enabled,
       },
       {
@@ -222,6 +224,7 @@ export const ShareSurveyModal = ({
     isStorageConfigured,
     workspaceCustomScripts,
     enterpriseLicenseRequestFormUrl,
+    isSmtpConfigured,
   ]);
 
   const getDefaultActiveId = useCallback(() => {

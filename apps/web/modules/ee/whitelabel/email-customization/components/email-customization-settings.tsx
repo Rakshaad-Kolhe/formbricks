@@ -24,6 +24,7 @@ import { Alert, AlertDescription } from "@/modules/ui/components/alert";
 import { Button } from "@/modules/ui/components/button";
 import { Uploader } from "@/modules/ui/components/file-input/components/uploader";
 import { showStorageNotConfiguredToast } from "@/modules/ui/components/storage-not-configured-toast/lib/utils";
+import { TooltipRenderer } from "@/modules/ui/components/tooltip";
 import { Muted, P, Small } from "@/modules/ui/components/typography";
 import { ModalButton, UpgradePrompt } from "@/modules/ui/components/upgrade-prompt";
 
@@ -38,6 +39,7 @@ interface EmailCustomizationSettingsProps {
   user: TUser | null;
   fbLogoUrl: string;
   isStorageConfigured: boolean;
+  isSmtpConfigured?: boolean;
   enterpriseLicenseRequestFormUrl: string;
 }
 
@@ -50,8 +52,9 @@ export const EmailCustomizationSettings = ({
   user,
   fbLogoUrl,
   isStorageConfigured,
+  isSmtpConfigured = true,
   enterpriseLicenseRequestFormUrl,
-}: EmailCustomizationSettingsProps) => {
+}: Readonly<EmailCustomizationSettingsProps>) => {
   const { t } = useTranslation();
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -269,13 +272,17 @@ export const EmailCustomizationSettings = ({
               </div>
 
               <div className="flex gap-4">
-                <Button
-                  data-testid="send-test-email-button"
-                  variant="secondary"
-                  disabled={isReadOnly || isSaving}
-                  onClick={sendTestEmail}>
-                  {t("common.send_test_email")}
-                </Button>
+                <TooltipRenderer
+                  tooltipContent={t("setup.invite.smtp_not_configured")}
+                  shouldRender={!isSmtpConfigured}>
+                  <Button
+                    data-testid="send-test-email-button"
+                    variant="secondary"
+                    disabled={isReadOnly || isSaving || !isSmtpConfigured}
+                    onClick={sendTestEmail}>
+                    {t("common.send_test_email")}
+                  </Button>
+                </TooltipRenderer>
                 <Button onClick={handleSave} disabled={!logoFile || isReadOnly} loading={isSaving}>
                   {t("common.save")}
                 </Button>

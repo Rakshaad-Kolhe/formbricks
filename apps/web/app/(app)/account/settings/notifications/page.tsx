@@ -5,6 +5,8 @@ import { EditAlerts } from "@/app/(app)/workspaces/[workspaceId]/settings/accoun
 import { IntegrationsTip } from "@/app/(app)/workspaces/[workspaceId]/settings/account/notifications/components/IntegrationsTip";
 import type { Membership } from "@/app/(app)/workspaces/[workspaceId]/settings/account/notifications/types";
 import { SettingsCard } from "@/app/(app)/workspaces/[workspaceId]/settings/components/SettingsCard";
+import { isSurveyVisibilityReady } from "@/lib/authzed/scope-readiness";
+import { IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { buildVisibleSurveyWhereAcrossOrganizations } from "@/lib/survey/visibility/predicate";
 import { getUser } from "@/lib/user/service";
 import { getTranslate } from "@/lingodotdev/server";
@@ -163,6 +165,7 @@ const Page = async (props: Readonly<{ searchParams: Promise<Record<string, strin
           user={user}
           autoDisableNotificationType={autoDisableNotificationType}
           autoDisableNotificationElementId={autoDisableNotificationElementId}
+          isSmtpConfigured={IS_SMTP_CONFIGURED}
         />
       </SettingsCard>
       <IntegrationsTip />

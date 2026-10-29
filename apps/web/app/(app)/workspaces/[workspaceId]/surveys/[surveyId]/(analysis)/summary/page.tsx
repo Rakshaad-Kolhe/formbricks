@@ -9,6 +9,7 @@ import {
   DEFAULT_LOCALE,
   ENTERPRISE_LICENSE_REQUEST_FORM_URL,
   IS_FORMBRICKS_CLOUD,
+  IS_SMTP_CONFIGURED,
   IS_STORAGE_CONFIGURED,
 } from "@/lib/constants";
 import { getPublicDomain } from "@/lib/getPublicUrl";
@@ -101,6 +102,7 @@ const SurveyPage = async (
             isContactsEnabled={isContactsEnabled}
             isFormbricksCloud={IS_FORMBRICKS_CLOUD}
             isStorageConfigured={IS_STORAGE_CONFIGURED}
+            isSmtpConfigured={IS_SMTP_CONFIGURED}
             enterpriseLicenseRequestFormUrl={ENTERPRISE_LICENSE_REQUEST_FORM_URL}
             aiUnavailableReason={aiUnavailableReason}
           />

@@ -39,8 +39,7 @@ interface SettingsViewProps {
   enterpriseLicenseRequestFormUrl: string;
   /** A save or publish was blocked because the survey has no trigger (ENG-2581). */
   hasTriggerError?: boolean;
-  /** Null when the organisation isn't entitled to data retention. */
-  dataRetention?: TSurveyDataRetentionContext;
+  isSmtpConfigured?: boolean;
 }
 
 export const SettingsView = ({
@@ -63,7 +62,8 @@ export const SettingsView = ({
   appSetupCompleted,
   enterpriseLicenseRequestFormUrl,
   hasTriggerError = false,
-  dataRetention = null,
+  isSmtpConfigured = true,
+
 }: Readonly<SettingsViewProps>) => {
   const isAppSurvey = localSurvey.type === "app";
 
@@ -124,6 +124,7 @@ export const SettingsView = ({
         isSpamProtectionAllowed={isSpamProtectionAllowed}
         surveySchedulingConfig={surveySchedulingConfig}
         locale={locale}
+        isSmtpConfigured={isSmtpConfigured}
       />
 
       <RecontactOptionsCard localSurvey={localSurvey} setLocalSurvey={setLocalSurvey} />

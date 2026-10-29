@@ -8,7 +8,7 @@ import { ZId, ZUuid } from "@formbricks/types/common";
 import { AuthenticationError, OperationNotAllowedError, ValidationError } from "@formbricks/types/errors";
 import { TOrganizationRole, ZOrganizationRole } from "@formbricks/types/memberships";
 import { assertCan, can } from "@/lib/authorization";
-import { INVITE_DISABLED, IS_FORMBRICKS_CLOUD } from "@/lib/constants";
+import { INVITE_DISABLED, IS_FORMBRICKS_CLOUD, IS_SMTP_CONFIGURED } from "@/lib/constants";
 import { createInviteToken } from "@/lib/jwt";
 import { getMembershipByUserIdOrganizationId } from "@/lib/membership/service";
 import { getAccessFlags } from "@/lib/membership/utils";
@@ -166,6 +166,10 @@ export const resendInviteAction = authenticatedActionClient.inputSchema(ZResendI
       throw new OperationNotAllowedError("Invite are disabled");
     }
 
+    if (!IS_SMTP_CONFIGURED) {
+      throw new OperationNotAllowedError("Email service is not configured");
+    }
+
     const inviteOrganizationId = await getOrganizationIdFromInviteId(parsedInput.inviteId);
 
     if (inviteOrganizationId !== parsedInput.organizationId) {
@@ -194,12 +198,16 @@ export const resendInviteAction = authenticatedActionClient.inputSchema(ZResendI
     ctx.auditLoggingCtx.inviteId = parsedInput.inviteId;
     ctx.auditLoggingCtx.oldObject = { ...invite };
     ctx.auditLoggingCtx.newObject = updatedInvite;
-    await sendInviteMemberEmail(
+    const isSent = await sendInviteMemberEmail(
       parsedInput.inviteId,
       updatedInvite.email,
       invite?.creator?.name ?? "",
       updatedInvite.name ?? ""
     );
+
+    if (!isSent) {
+      throw new OperationNotAllowedError("Failed to send invite email");
+    }
 
     return updatedInvite;
   })
@@ -376,7 +384,7 @@ export const inviteUserAction = authenticatedActionClient.inputSchema(ZInviteUse
       teamIds: parsedInput.teamIds,
     };
 
-    if (inviteId) {
+    if (inviteId && IS_SMTP_CONFIGURED) {
       // Email delivery is best-effort: the invite is already persisted and can be shared via its
       // link, so a failing/misconfigured SMTP must not fail the whole action — otherwise the created
       // invite is stranded behind an "Invite already exists" error on the user's next attempt.
@@ -472,10 +480,12 @@ export const bulkInviteUsersAction = authenticatedActionClient.inputSchema(ZBulk
           if (inviteId) {
             // Best-effort email (see inviteUserAction): a failed send must not flip a created invite
             // to "failed" — the invitee exists and can be reached via the invite link.
-            try {
-              await sendInviteMemberEmail(inviteId, email, ctx.user.name ?? "", invitee.name ?? "");
-            } catch (error) {
-              logger.error(error, "Failed to send bulk invite email");
+            if (IS_SMTP_CONFIGURED) {
+              try {
+                await sendInviteMemberEmail(inviteId, email, ctx.user.name ?? "", invitee.name ?? "");
+              } catch (error) {
+                logger.error(error, "Failed to send bulk invite email");
+              }
             }
             invitedEmails.push(email);
             results.push({ email, success: true });

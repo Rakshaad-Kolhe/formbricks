@@ -9,6 +9,7 @@ import {
   ENTERPRISE_LICENSE_REQUEST_FORM_URL,
   FB_LOGO_URL,
   IS_FORMBRICKS_CLOUD,
+  IS_SMTP_CONFIGURED,
   IS_STORAGE_CONFIGURED,
 } from "@/lib/constants";
 import { getUser } from "@/lib/user/service";
@@ -88,6 +89,7 @@ const Page = async (props: Readonly<{ params: Promise<{ organizationId: string }
         fbLogoUrl={FB_LOGO_URL}
         user={user}
         isStorageConfigured={IS_STORAGE_CONFIGURED}
+        isSmtpConfigured={IS_SMTP_CONFIGURED}
         enterpriseLicenseRequestFormUrl={ENTERPRISE_LICENSE_REQUEST_FORM_URL}
       />
       {isMultiOrgEnabled && (
