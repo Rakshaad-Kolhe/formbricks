@@ -78,7 +78,7 @@ provider manually.
 
 ### Your own endpoint
 
-To use an endpoint you already run, do not enable the bundled runtime — keep the `qwen` Compose profile off, or
+To use an external or self-hosted endpoint you already run (including any OpenAI-compatible provider, proxy, or model router), do not enable the bundled runtime — keep the `qwen` Compose profile off, or
 `llm.enabled=false` in Helm. Point `AI_OPENAI_COMPATIBLE_BASE_URL` at your endpoint and add
 `AI_OPENAI_COMPATIBLE_API_KEY` if it requires one.
 
